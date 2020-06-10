@@ -1,11 +1,7 @@
 ---
 name: Test Suite
 
-on:
-  push:
-    branches: ["master"]
-  pull_request:
-    branches: ["master"]
+on: [push, pull_request]
 
 jobs:
   tests:
@@ -15,12 +11,26 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.6", "3.7", "3.8"]
+        include:
+          # Dev versions
+          - { python-version: 3.9-dev, os: ubuntu-18.04 }
+          - { python-version: 3.10-dev, os: ubuntu-18.04 }
 
     steps:
       - uses: "actions/checkout@v2"
-      - uses: "actions/setup-python@v1"
+
+      - name: Set up Python ${{ matrix.python }} (deadsnakes)
+        uses: deadsnakes/action@v1.0.0
+        if: endsWith(matrix.python-version, '-dev')
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        if: "!endsWith(matrix.python-version, '-dev')"
+        uses: "actions/setup-python@v1"
         with:
           python-version: "${{ matrix.python-version }}"
+
       - name: "Install dependencies"
         run: "scripts/install"
       - name: "Run linting checks"
